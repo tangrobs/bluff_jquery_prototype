@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Page Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.dev.js"></script>
+    <script>
+        $(document).ready(function(){
+            var name = prompt("What is your name?")
+            var socket = io();
+
+            var id;
+            
+            socket.emit("player_name",name)
+            socket.on('yourid',(socketid)=>{
+                id = socketid
+                console.log(id);
+                })
+
+            socket.on("player_list",function(data){
+                console.log(data);
+                var cstr = ""
+                for(let player of data){
+                    cstr += `<div id = '${player.socketid}'><h1>${player.name}</h1></div>`
+                }
+                $('.players').html(cstr)
+            })
+
+            socket.on("isleader",function(data){
+                console.log(data);
+
+                // now that we are the leader create a button for this user
+                $(".controls").append("<button id = 'start'>start game</button>")
+
+            })
+
+            socket.on("game_state",function(state){
+                console.log(state);
+                var cstr = ""
+                console.log(state);
+                for(let player of state.players){
+                    cstr += `<div id = '${player.socketid}'><h1>${player.name}</h1>`
+                    for(var i in player.hand){
+                        cstr += `<div class = 'card' cardid = "${player.hand[i].cardid}">${player.hand[i].name} of ${player.hand[i].suit}</div>`
+                    }
+                    if(player.socketid == state.players[state.active_player].socketid && id == state.players[state.active_player].socketid){
+                        if(!state.curround_card_value){
+                            cstr += `<select id = "cardvalue"><option value = 1>ace</option><option value = 2>two</option><option value = 3>three</option><option value = 4>four</option><option value = 5>five</option><option value = 6>six</option><option value = 7>seven</option><option value = 8>eight</option><option value = 9>nine</option><option value = 10>ten</option><option value = 11>jack</option><option value = 12>queen</option><option value = 13>king</option></select>`
+
+                        }else{
+                            cstr += `<input id = "cardvalue" type = "hidden" value = '${state.curround_card_value}'>`
+                        }
+                        cstr += `<button id = 'play'>play</button><button id = 'pass'>pass</button><button id = 'bluff'>call bluff</button>`
+
+                    }
+                    cstr += `</div>`
+                }
+                $('.players').html(cstr)
+            })
+
+            
+            $(document).on('click','#start',function(){
+                socket.emit("startgame","whatever data here")
+            })
+            $(document).on('click','#bluff',function(){
+                socket.emit('callbluff','dummy data')
+            })
+            $(document).on('click','#pass',function(){
+                socket.emit('pass','dummy data')
+            })
+
+            $(document).on('click','#play',function(){
+                choosen_card_val = $('#cardvalue').val()
+                console.log(choosen_card_val);
+                socket.emit('play',{
+                    choosen_card: choosen_card_val,
+                    selected_cards: selected_cards
+                })
+                selected_cards = []
+            })
+
+            var selected_cards = []
+            $(document).on('click',`.card`,function(d){
+                if($(this).parent().attr('id') == id){
+                    var idx = selected_cards.indexOf($(this).attr('cardid'))
+                    //selected_cards.push($(this).attr('cardid'))
+                    if( idx > -1){
+                        selected_cards.splice(idx,1);
+                    }else{
+                        selected_cards.push($(this).attr('cardid'))
+                    } 
+                    console.log(selected_cards);               
+                }
+            })
+
+
+        })
+    </script>
+    <style>
+        .card{
+            width:110px;
+            height:200px;
+            border:1px solid black;
+            display:inline-block;
+            margin:10px;
+        }
+    </style>
+</head>
+<body>
+    <div class = "controls"></div>
+    <div class = "players"></div>
+    <div class = "history">
+
+    </div>
+
+    <div class = "lastround"></div>
+</body>
+</html>
