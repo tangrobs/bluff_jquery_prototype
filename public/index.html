@@ -40,7 +40,6 @@
             socket.on("game_state",function(state){
                 console.log(state);
                 var cstr = ""
-                console.log(state);
                 for(let player of state.players){
                     cstr += `<div id = '${player.socketid}'><h1>${player.name}</h1>`
                     for(var i in player.hand){
@@ -94,6 +93,10 @@
                     } 
                     console.log(selected_cards);               
                 }
+            })
+
+            socket.on('winner',function(winner){
+                alert(winner.name + " has won the game!")
             })
 
 
